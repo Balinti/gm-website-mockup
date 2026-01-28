@@ -1,9 +1,32 @@
-import React, { useState } from 'react'
-import { motion } from 'framer-motion'
+import React, { useState, useRef } from 'react'
+import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion'
 
-function Hero() {
+function Hero({ videoUrl }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchFocused, setSearchFocused] = useState(false)
+  const containerRef = useRef(null)
+
+  // Parallax scroll effect
+  const { scrollY } = useScroll()
+  const y = useTransform(scrollY, [0, 500], [0, 150])
+  const opacity = useTransform(scrollY, [0, 300], [1, 0])
+  const scale = useTransform(scrollY, [0, 300], [1, 1.1])
+
+  // Mouse tracking for 3D effect
+  const mouseX = useMotionValue(0)
+  const mouseY = useMotionValue(0)
+  const springX = useSpring(mouseX, { stiffness: 50, damping: 20 })
+  const springY = useSpring(mouseY, { stiffness: 50, damping: 20 })
+
+  const handleMouseMove = (e) => {
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (rect) {
+      const x = (e.clientX - rect.left - rect.width / 2) / 25
+      const y = (e.clientY - rect.top - rect.height / 2) / 25
+      mouseX.set(x)
+      mouseY.set(y)
+    }
+  }
 
   const headlines = [
     { tag: 'CANNABIS', text: 'We Applaud Federal Cannabis Rescheduling and Celebrate Our Clients' },
@@ -20,55 +43,147 @@ function Hero() {
     return () => clearInterval(interval)
   }, [])
 
+  // Default video URL - replace with actual video
+  const defaultVideo = videoUrl || "https://www.gmlaw.com/wp-content/uploads/2024/01/gm-hero-video.mp4"
+
   return (
-    <section className="relative h-screen flex items-center justify-center overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-navy">
-        <div 
-          className="absolute inset-0 opacity-20"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+    <section
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      className="relative h-screen flex items-center justify-center overflow-hidden"
+    >
+      {/* Video/Image Background with Parallax */}
+      <motion.div
+        className="absolute inset-0"
+        style={{ scale }}
+      >
+        {/* Video Background */}
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+          poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 1080'%3E%3Crect fill='%231e3a5f' width='1920' height='1080'/%3E%3C/svg%3E"
+        >
+          <source src={defaultVideo} type="video/mp4" />
+        </video>
+
+        {/* Overlay gradient */}
+        <div className="absolute inset-0 bg-gradient-to-b from-navy/80 via-navy/60 to-navy/90" />
+
+        {/* Animated mesh gradient */}
+        <motion.div
+          className="absolute inset-0 opacity-30"
+          animate={{
+            background: [
+              'radial-gradient(circle at 20% 80%, rgba(201, 162, 39, 0.3) 0%, transparent 50%)',
+              'radial-gradient(circle at 80% 20%, rgba(201, 162, 39, 0.3) 0%, transparent 50%)',
+              'radial-gradient(circle at 40% 40%, rgba(201, 162, 39, 0.3) 0%, transparent 50%)',
+              'radial-gradient(circle at 20% 80%, rgba(201, 162, 39, 0.3) 0%, transparent 50%)',
+            ]
           }}
+          transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
         />
-        {/* Animated lines */}
-        <svg className="absolute inset-0 w-full h-full opacity-10">
-          <motion.path
-            d="M0,400 Q400,300 800,400 T1600,400"
-            stroke="white"
-            strokeWidth="1"
-            fill="none"
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 3, repeat: Infinity, repeatType: "loop" }}
+      </motion.div>
+
+      {/* Floating particles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(20)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-1 h-1 bg-gold/30 rounded-full"
+            initial={{
+              x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1920),
+              y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1080)
+            }}
+            animate={{
+              y: [null, -100],
+              opacity: [0, 1, 0]
+            }}
+            transition={{
+              duration: 3 + Math.random() * 2,
+              repeat: Infinity,
+              delay: Math.random() * 2,
+              ease: "linear"
+            }}
           />
-        </svg>
+        ))}
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 max-w-6xl mx-auto px-6 text-center">
+      {/* Animated geometric lines */}
+      <svg className="absolute inset-0 w-full h-full pointer-events-none">
+        <motion.line
+          x1="0" y1="100%" x2="100%" y2="0"
+          stroke="rgba(201, 162, 39, 0.1)"
+          strokeWidth="1"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 3, repeat: Infinity, repeatType: "reverse" }}
+        />
+        <motion.line
+          x1="100%" y1="100%" x2="0" y2="30%"
+          stroke="rgba(255, 255, 255, 0.05)"
+          strokeWidth="1"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 4, delay: 1, repeat: Infinity, repeatType: "reverse" }}
+        />
+      </svg>
+
+      {/* Content with parallax and 3D effect */}
+      <motion.div
+        className="relative z-10 max-w-6xl mx-auto px-6 text-center"
+        style={{
+          y,
+          opacity,
+          rotateX: springY,
+          rotateY: springX,
+          transformPerspective: 1000
+        }}
+      >
         <motion.div
           key={currentHeadline}
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -30 }}
-          transition={{ duration: 0.8 }}
+          initial={{ opacity: 0, y: 50, filter: 'blur(10px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          exit={{ opacity: 0, y: -50, filter: 'blur(10px)' }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         >
-          <span className="text-gold text-sm tracking-[0.3em] font-medium">
+          <motion.span
+            className="text-gold text-sm tracking-[0.3em] font-medium inline-block"
+            initial={{ opacity: 0, letterSpacing: '0.5em' }}
+            animate={{ opacity: 1, letterSpacing: '0.3em' }}
+            transition={{ duration: 1, delay: 0.2 }}
+          >
             {headlines[currentHeadline].tag}
-          </span>
-          <h1 className="text-white text-4xl md:text-6xl font-serif mt-4 leading-tight max-w-4xl mx-auto">
-            {headlines[currentHeadline].text}
+          </motion.span>
+          <h1 className="text-white text-4xl md:text-6xl lg:text-7xl font-serif mt-4 leading-tight max-w-5xl mx-auto">
+            {headlines[currentHeadline].text.split(' ').map((word, i) => (
+              <motion.span
+                key={i}
+                className="inline-block mr-[0.25em]"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 + i * 0.05 }}
+              >
+                {word}
+              </motion.span>
+            ))}
           </h1>
         </motion.div>
 
-        {/* Search Bar */}
+        {/* Search Bar with glow effect */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.6 }}
+          transition={{ delay: 0.8, duration: 0.6 }}
           className="mt-12 max-w-xl mx-auto"
         >
-          <div className={`relative transition-all duration-300 ${searchFocused ? 'scale-105' : ''}`}>
+          <div className={`relative transition-all duration-500 ${searchFocused ? 'scale-105' : ''}`}>
+            <motion.div
+              className="absolute -inset-2 bg-gold/20 rounded-lg blur-xl transition-opacity duration-300"
+              animate={{ opacity: searchFocused ? 1 : 0 }}
+            />
             <input
               type="text"
               placeholder="Find answers here"
@@ -76,40 +191,72 @@ function Hero() {
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
-              className="w-full bg-transparent border-b-2 border-gold text-white placeholder-gold/70 py-3 px-2 text-lg focus:outline-none"
+              className="relative w-full bg-white/10 backdrop-blur-sm border border-gold/50 text-white placeholder-white/50 py-4 px-6 text-lg focus:outline-none focus:border-gold focus:bg-white/20 transition-all duration-300 rounded-sm"
             />
-            <button className="absolute right-2 top-1/2 -translate-y-1/2 text-gold hover:text-white transition-colors">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button className="absolute right-4 top-1/2 -translate-y-1/2 text-gold hover:text-white transition-colors">
+              <motion.svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                whileHover={{ scale: 1.2, rotate: 90 }}
+                transition={{ duration: 0.3 }}
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+              </motion.svg>
             </button>
           </div>
         </motion.div>
 
-        {/* Headline indicators */}
+        {/* Headline indicators with progress animation */}
         <div className="flex justify-center gap-3 mt-8">
           {headlines.map((_, idx) => (
             <button
               key={idx}
               onClick={() => setCurrentHeadline(idx)}
-              className={`h-1 transition-all duration-300 ${
-                idx === currentHeadline ? 'w-12 bg-white' : 'w-6 bg-white/40'
-              }`}
-            />
+              className="relative h-1 overflow-hidden bg-white/20"
+              style={{ width: idx === currentHeadline ? 48 : 24 }}
+            >
+              {idx === currentHeadline && (
+                <motion.div
+                  className="absolute inset-0 bg-gold"
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 5, ease: "linear" }}
+                  style={{ transformOrigin: 'left' }}
+                />
+              )}
+            </button>
           ))}
         </div>
-      </div>
+      </motion.div>
 
-      {/* Scroll indicator */}
+      {/* Scroll indicator with bounce */}
       <motion.div
-        animate={{ y: [0, 10, 0] }}
-        transition={{ duration: 1.5, repeat: Infinity }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.5 }}
         className="absolute bottom-8 left-1/2 -translate-x-1/2"
       >
-        <svg className="w-6 h-6 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-        </svg>
+        <motion.div
+          animate={{ y: [0, 12, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+          className="flex flex-col items-center gap-2"
+        >
+          <span className="text-white/50 text-xs tracking-widest">SCROLL</span>
+          <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center pt-2">
+            <motion.div
+              className="w-1.5 h-1.5 bg-gold rounded-full"
+              animate={{ y: [0, 16, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            />
+          </div>
+        </motion.div>
       </motion.div>
+
+      {/* Corner accents */}
+      <div className="absolute top-0 left-0 w-32 h-32 border-l-2 border-t-2 border-gold/30 pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-32 h-32 border-r-2 border-b-2 border-gold/30 pointer-events-none" />
     </section>
   )
 }
