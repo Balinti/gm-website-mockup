@@ -43,8 +43,8 @@ function Hero({ videoUrl }) {
     return () => clearInterval(interval)
   }, [])
 
-  // Default video URL - replace with actual video
-  const defaultVideo = videoUrl || "https://www.gmlaw.com/wp-content/uploads/2024/01/gm-hero-video.mp4"
+  // Video URL
+  const defaultVideo = videoUrl || "https://raw.githubusercontent.com/Balinti/gm-website-mockup/main/VID-20260116-WA0051.mp4"
 
   return (
     <section
