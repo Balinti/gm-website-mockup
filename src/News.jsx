@@ -181,7 +181,7 @@ function News() {
   const bottomNews = news.slice(4)
 
   return (
-    <section ref={containerRef} id="insights" className="py-24 bg-navy relative overflow-hidden">
+    <section ref={containerRef} id="insights" className="py-16 sm:py-24 bg-navy relative overflow-hidden">
       {/* Animated background */}
       <motion.div
         className="absolute inset-0 pointer-events-none"
@@ -220,7 +220,7 @@ function News() {
         ))}
       </motion.div>
 
-      <div className="max-w-7xl mx-auto px-6 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -229,7 +229,7 @@ function News() {
           className="mb-12"
         >
           <motion.h2
-            className="text-white text-5xl font-serif"
+            className="text-white text-3xl sm:text-5xl font-serif"
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}

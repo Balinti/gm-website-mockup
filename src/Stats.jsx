@@ -22,7 +22,7 @@ function AnimatedCounter({ end, suffix = '', duration = 2 }) {
   return <span ref={ref}>{count}{suffix}</span>
 }
 
-function MagneticButton({ children, className }) {
+function MagneticButton({ children, className, isMobile }) {
   const ref = useRef(null)
   const x = useMotionValue(0)
   const y = useMotionValue(0)
@@ -30,6 +30,7 @@ function MagneticButton({ children, className }) {
   const springY = useSpring(y, { stiffness: 150, damping: 15 })
 
   const handleMouseMove = (e) => {
+    if (isMobile) return
     const rect = ref.current?.getBoundingClientRect()
     if (rect) {
       x.set((e.clientX - rect.left - rect.width / 2) / 3)
@@ -47,9 +48,9 @@ function MagneticButton({ children, className }) {
       ref={ref}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      style={{ x: springX, y: springY }}
+      style={isMobile ? {} : { x: springX, y: springY }}
       className={className}
-      whileHover={{ scale: 1.05 }}
+      whileHover={isMobile ? {} : { scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
     >
       {children}
@@ -58,7 +59,16 @@ function MagneticButton({ children, className }) {
 }
 
 function Stats() {
+  const [isMobile, setIsMobile] = useState(false)
   const containerRef = useRef(null)
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start end", "end start"]
@@ -73,31 +83,55 @@ function Stats() {
   ]
 
   return (
-    <section ref={containerRef} className="py-24 bg-white relative overflow-hidden">
-      {/* Animated background pattern */}
-      <motion.div
-        className="absolute inset-0 opacity-5"
-        style={{ y: backgroundY }}
-      >
-        <div className="absolute inset-0" style={{
-          backgroundImage: `repeating-linear-gradient(90deg, #1e3a5f 0px, #1e3a5f 1px, transparent 1px, transparent 60px),
-                           repeating-linear-gradient(0deg, #1e3a5f 0px, #1e3a5f 1px, transparent 1px, transparent 60px)`
-        }} />
-      </motion.div>
+    <section ref={containerRef} className="py-16 sm:py-24 bg-white relative overflow-hidden">
+      {/* Animated background pattern - hidden on mobile */}
+      {!isMobile && (
+        <motion.div
+          className="absolute inset-0 opacity-5"
+          style={{ y: backgroundY }}
+        >
+          <div className="absolute inset-0" style={{
+            backgroundImage: `repeating-linear-gradient(90deg, #1e3a5f 0px, #1e3a5f 1px, transparent 1px, transparent 60px),
+                             repeating-linear-gradient(0deg, #1e3a5f 0px, #1e3a5f 1px, transparent 1px, transparent 60px)`
+          }} />
+        </motion.div>
+      )}
 
-      <div className="max-w-7xl mx-auto px-6 relative">
-        <div className="grid md:grid-cols-2 gap-16 items-start">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
+        {/* Stats - Show first on mobile */}
+        <div className="flex justify-center mb-12 md:hidden">
+          <div className="grid grid-cols-3 gap-4 text-center">
+            {stats.map((stat, idx) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: idx * 0.1 }}
+                className="relative"
+              >
+                <div className="text-4xl sm:text-5xl font-serif text-navy">
+                  <AnimatedCounter end={stat.number} suffix="" />
+                  <span className="text-gold">{stat.suffix}</span>
+                </div>
+                <div className="text-navy/70 text-sm mt-1">{stat.label}</div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-start">
           {/* Left side - Search panels */}
-          <div className="space-y-12">
+          <div className="space-y-8 sm:space-y-12">
             <motion.div
-              initial={{ opacity: 0, x: -50 }}
+              initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             >
-              <h2 className="text-navy text-4xl font-serif mb-8">Discover Our People</h2>
+              <h2 className="text-navy text-2xl sm:text-4xl font-serif mb-4 sm:mb-8">Discover Our People</h2>
               <motion.div
-                className="flex flex-wrap gap-1 mb-6"
+                className="flex flex-wrap gap-0.5 sm:gap-1 mb-4 sm:mb-6"
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true }}
@@ -105,7 +139,7 @@ function Stats() {
                   visible: { transition: { staggerChildren: 0.02 } }
                 }}
               >
-                {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((letter, i) => (
+                {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((letter) => (
                   <motion.div
                     key={letter}
                     variants={{
@@ -114,7 +148,8 @@ function Stats() {
                     }}
                   >
                     <MagneticButton
-                      className="w-9 h-9 text-sm text-navy hover:bg-navy hover:text-white transition-colors border border-navy/20 hover:border-navy"
+                      isMobile={isMobile}
+                      className="w-7 h-7 sm:w-9 sm:h-9 text-xs sm:text-sm text-navy hover:bg-navy hover:text-white transition-colors border border-navy/20 hover:border-navy"
                     >
                       {letter}
                     </MagneticButton>
@@ -122,49 +157,42 @@ function Stats() {
                 ))}
               </motion.div>
               <div className="relative group">
-                <motion.div
-                  className="absolute -inset-2 bg-gold/10 rounded-lg blur-xl"
-                  initial={{ opacity: 0 }}
-                  whileHover={{ opacity: 1 }}
-                />
                 <input
                   type="text"
                   placeholder="Search"
-                  className="relative w-full border-b-2 border-navy/30 py-3 bg-transparent focus:border-gold focus:outline-none transition-all duration-300"
+                  className="relative w-full border-b-2 border-navy/30 py-2 sm:py-3 bg-transparent focus:border-gold focus:outline-none transition-all duration-300 text-sm sm:text-base"
                 />
-                <motion.svg
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 text-gold"
+                <svg
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gold"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
-                  whileHover={{ scale: 1.2, rotate: 15 }}
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </motion.svg>
+                </svg>
               </div>
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, x: -50 }}
+              initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
             >
-              <h2 className="text-navy text-4xl font-serif mb-8">Discover Our Services</h2>
-              <div className="space-y-4">
+              <h2 className="text-navy text-2xl sm:text-4xl font-serif mb-4 sm:mb-8">Discover Our Services</h2>
+              <div className="space-y-3 sm:space-y-4">
                 <div className="relative group">
                   <input
                     type="text"
                     placeholder="Search Practice Areas"
-                    className="w-full border-b-2 border-navy/30 py-3 bg-transparent focus:border-gold focus:outline-none transition-all duration-300"
+                    className="w-full border-b-2 border-navy/30 py-2 sm:py-3 bg-transparent focus:border-gold focus:outline-none transition-all duration-300 text-sm sm:text-base"
                   />
-                  <svg className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </div>
-                <motion.select
-                  className="w-full border-b-2 border-navy/30 py-3 bg-transparent focus:border-gold focus:outline-none text-navy/60 cursor-pointer"
-                  whileHover={{ scale: 1.02 }}
+                <select
+                  className="w-full border-b-2 border-navy/30 py-2 sm:py-3 bg-transparent focus:border-gold focus:outline-none text-navy/60 cursor-pointer text-sm sm:text-base"
                 >
                   <option>Practice Areas</option>
                   <option>Real Estate</option>
@@ -172,13 +200,13 @@ function Stats() {
                   <option>Cannabis</option>
                   <option>Immigration</option>
                   <option>Corporate</option>
-                </motion.select>
+                </select>
               </div>
             </motion.div>
           </div>
 
-          {/* Right side - Stats with 3D cards */}
-          <div className="flex justify-center items-center min-h-[400px]">
+          {/* Right side - Stats with 3D cards (desktop only) */}
+          <div className="hidden md:flex justify-center items-center min-h-[400px]">
             <div className="grid grid-cols-3 gap-6 text-center">
               {stats.map((stat, idx) => (
                 <motion.div
